@@ -142,193 +142,436 @@
     
     <script>
         function getBrowserInfo() {
-            const ua = navigator.userAgent;
-            let browserInfo = {
-                name: "Không xác định",
-                engine: "Không xác định",
-                platform: navigator.platform,
-                isWebView: false,
+            const ua = navigator.userAgent.toLowerCase();
+            const platform = navigator.platform;
+            const vendor = navigator.vendor || "";
+            
+            function detectWebView() {
+                const webviews = {
+                    android: {
+                        webview: !!ua.match(/; wv\)/),
+                        crosswalk: /crosswalk/i.test(ua),
+                        native: /android/i.test(ua) && /version/i.test(ua) && !/(chrome|firefox|opera|edge)/i.test(ua),
+                        samsung: /samsungbrowser/i.test(ua),
+                        miui: /miuibrowser/i.test(ua),
+                        huawei: /huaweibrowser/i.test(ua),
+                        vivo: /vivobrowser/i.test(ua),
+                        oppo: /oppobrowser/i.test(ua),
+                        xiaomi: /xiaomibrowser/i.test(ua)
+                    },
+                    ios: {
+                        webview: !!(/(iphone|ipod|ipad).*applewebkit(?!.*safari)/i.test(ua) || 
+                                  (/\{.*\}/.test(navigator.standalone))),
+                        facebook: /fbios/i.test(ua),
+                        instagram: /instagram/i.test(ua),
+                        line: /line/i.test(ua),
+                        wechat: /micromessenger/i.test(ua),
+                        tiktok: /tiktok/i.test(ua),
+                        snapchat: /snapchat/i.test(ua)
+                    },
+                    general: {
+                        electron: /electron/i.test(ua),
+                        cordova: !!window.cordova,
+                        phonegap: !!window.PhoneGap,
+                        capacitor: !!window.Capacitor,
+                        reactNative: !!window.ReactNativeWebView,
+                        flutter: /flutter/i.test(ua),
+                        ionic: /ionic/i.test(ua)
+                    }
+                };
+
+                let result = {
+                    isWebView: false,
+                    type: 'Browser',
+                    details: []
+                };
+
+                // Kiểm tra Android WebView
+                if (webviews.android.webview || webviews.android.native) {
+                    result.isWebView = true;
+                    result.type = 'Android WebView';
+                    if (webviews.android.crosswalk) result.details.push('Crosswalk');
+                    if (webviews.android.samsung) result.details.push('Samsung Browser');
+                    if (webviews.android.miui) result.details.push('MIUI Browser');
+                    if (webviews.android.huawei) result.details.push('Huawei Browser');
+                    if (webviews.android.vivo) result.details.push('Vivo Browser');
+                    if (webviews.android.oppo) result.details.push('OPPO Browser');
+                    if (webviews.android.xiaomi) result.details.push('Xiaomi Browser');
+                }
+
+                // Kiểm tra iOS WebView
+                if (webviews.ios.webview) {
+                    result.isWebView = true;
+                    result.type = 'iOS WebView';
+                    if (webviews.ios.facebook) result.details.push('Facebook');
+                    if (webviews.ios.instagram) result.details.push('Instagram');
+                    if (webviews.ios.line) result.details.push('LINE');
+                    if (webviews.ios.wechat) result.details.push('WeChat');
+                    if (webviews.ios.tiktok) result.details.push('TikTok');
+                    if (webviews.ios.snapchat) result.details.push('Snapchat');
+                }
+
+                // Kiểm tra Framework
+                if (webviews.general.electron) {
+                    result.isWebView = true;
+                    result.type = 'Desktop WebView';
+                    result.details.push('Electron');
+                }
+                if (webviews.general.cordova) result.details.push('Cordova');
+                if (webviews.general.phonegap) result.details.push('PhoneGap');
+                if (webviews.general.capacitor) result.details.push('Capacitor');
+                if (webviews.general.reactNative) result.details.push('React Native');
+                if (webviews.general.flutter) result.details.push('Flutter');
+                if (webviews.general.ionic) result.details.push('Ionic');
+
+                return result;
+            }
+
+            function detectBrowser() {
+                const browsers = {
+                    edge: /edg/i,
+                    edgeChromium: /edg(?!e)/i,
+                    chrome: /chrome|crios/i,
+                    firefox: /firefox|fxios/i,
+                    safari: /safari/i,
+                    opera: /opr|opera/i,
+                    ie: /msie|trident/i,
+                    brave: /brave/i,
+                    vivaldi: /vivaldi/i,
+                    yandex: /yabrowser/i,
+                    chromium: /chromium/i,
+                    seamonkey: /seamonkey/i,
+                    ucbrowser: /ucbrowser/i,
+                    qqlite: /qqlite/i,
+                    maxthon: /maxthon/i,
+                    konqueror: /konqueror/i
+                };
+
+                let browserName = "Không xác định";
+                let browserVersion = "";
+
+                // Phát hiện trình duyệt và version
+                if (browsers.edgeChromium.test(ua)) {
+                    browserName = "Microsoft Edge (Chromium)";
+                    browserVersion = ua.match(/edg(?!e)\/([\d.]+)/i)?.[1];
+                } else if (browsers.edge.test(ua)) {
+                    browserName = "Microsoft Edge (Legacy)";
+                    browserVersion = ua.match(/edge\/([\d.]+)/i)?.[1];
+                } else if (browsers.chrome.test(ua)) {
+                    if (browsers.brave.test(ua)) {
+                        browserName = "Brave";
+                    } else if (browsers.vivaldi.test(ua)) {
+                        browserName = "Vivaldi";
+                    } else if (browsers.chromium.test(ua)) {
+                        browserName = "Chromium";
+                    } else {
+                        browserName = "Google Chrome";
+                    }
+                    browserVersion = ua.match(/(?:chrome|crios)\/([\d.]+)/i)?.[1];
+                } else if (browsers.firefox.test(ua)) {
+                    browserName = "Mozilla Firefox";
+                    browserVersion = ua.match(/(?:firefox|fxios)\/([\d.]+)/i)?.[1];
+                } else if (browsers.safari.test(ua) && !browsers.chrome.test(ua)) {
+                    browserName = "Safari";
+                    browserVersion = ua.match(/version\/([\d.]+)/i)?.[1];
+                } else if (browsers.opera.test(ua)) {
+                    browserName = "Opera";
+                    browserVersion = ua.match(/(?:opera|opr)\/([\d.]+)/i)?.[1];
+                }
+
+                return {
+                    name: browserName,
+                    version: browserVersion || "Không xác định"
+                };
+            }
+
+            function detectEngine() {
+                const engines = {
+                    webkit: /applewebkit/i,
+                    blink: /chrome|chromium/i,
+                    gecko: /gecko/i,
+                    presto: /presto/i,
+                    trident: /trident|msie/i
+                };
+
+                let engineName = "Không xác định";
+                let engineVersion = "";
+
+                if (engines.webkit.test(ua)) {
+                    engineName = "WebKit";
+                    engineVersion = ua.match(/applewebkit\/([\d.]+)/i)?.[1];
+                } else if (engines.blink.test(ua)) {
+                    engineName = "Blink";
+                } else if (engines.gecko.test(ua)) {
+                    engineName = "Gecko";
+                    engineVersion = ua.match(/rv:([\d.]+)/i)?.[1];
+                } else if (engines.presto.test(ua)) {
+                    engineName = "Presto";
+                } else if (engines.trident.test(ua)) {
+                    engineName = "Trident";
+                    engineVersion = ua.match(/trident\/([\d.]+)/i)?.[1];
+                }
+
+                return {
+                    name: engineName,
+                    version: engineVersion || "Không xác định"
+                };
+            }
+
+            const webViewInfo = detectWebView();
+            const browserInfo = detectBrowser();
+            const engineInfo = detectEngine();
+
+            let info = {
+                name: browserInfo.name,
+                version: browserInfo.version,
+                engine: `${engineInfo.name} ${engineInfo.version}`,
+                platform: platform,
+                isWebView: webViewInfo.isWebView,
+                webViewType: webViewInfo.type,
+                webViewDetails: webViewInfo.details,
                 language: navigator.language || navigator.userLanguage,
                 cookieEnabled: navigator.cookieEnabled,
+                doNotTrack: navigator.doNotTrack === "1" || window.doNotTrack === "1",
                 screenResolution: `${window.screen.width}x${window.screen.height}`,
                 colorDepth: window.screen.colorDepth,
-                devicePixelRatio: window.devicePixelRatio,
+                pixelRatio: window.devicePixelRatio,
                 connection: navigator.connection ? {
                     type: navigator.connection.effectiveType,
                     downlink: navigator.connection.downlink,
-                    rtt: navigator.connection.rtt
+                    rtt: navigator.connection.rtt,
+                    saveData: navigator.connection.saveData
                 } : null,
                 memory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "Không có thông tin",
                 cores: navigator.hardwareConcurrency || "Không có thông tin",
                 touchScreen: navigator.maxTouchPoints > 0,
                 battery: null,
-                online: navigator.onLine
+                online: navigator.onLine,
+                permissions: {
+                    notifications: null,
+                    geolocation: null,
+                    camera: null,
+                    microphone: null
+                }
             };
 
-            // Kiểm tra thông tin pin
-            if (navigator.getBattery) {
-                navigator.getBattery().then(battery => {
-                    browserInfo.battery = {
-                        level: Math.round(battery.level * 100),
-                        charging: battery.charging
-                    };
-                    updateBatteryInfo();
+            // Kiểm tra quyền
+            if (navigator.permissions) {
+                ['notifications', 'geolocation', 'camera', 'microphone'].forEach(permission => {
+                    navigator.permissions.query({ name: permission }).then(result => {
+                        info.permissions[permission] = result.state;
+                    }).catch(() => {
+                        info.permissions[permission] = 'không hỗ trợ';
+                    });
                 });
             }
 
-            // Phát hiện WebView
-            if (ua.includes("wv") || ua.includes("WebView")) {
-                browserInfo.isWebView = true;
+            // Kiểm tra pin
+            if (navigator.getBattery) {
+                navigator.getBattery().then(battery => {
+                    info.battery = {
+                        level: Math.round(battery.level * 100),
+                        charging: battery.charging,
+                        chargingTime: battery.chargingTime,
+                        dischargingTime: battery.dischargingTime
+                    };
+                    updateDisplay(info);
+                });
+            } else {
+                updateDisplay(info);
             }
 
-            // Phát hiện Engine
-            if (window.chrome) {
-                browserInfo.engine = "Blink (Chrome Engine)";
-            } else if ('WebKitAppearance' in document.documentElement.style) {
-                browserInfo.engine = "WebKit";
-            } else if ('MozAppearance' in document.documentElement.style) {
-                browserInfo.engine = "Gecko (Firefox Engine)";
-            }
+            function getBrowserIcon(browserName) {
+                const browserIcons = {
+                    'Google Chrome': 'fa-chrome',
+                    'Microsoft Edge': 'fa-edge',
+                    'Mozilla Firefox': 'fa-firefox-browser',
+                    'Safari': 'fa-safari',
+                    'Opera': 'fa-opera',
+                    'Internet Explorer': 'fa-internet-explorer',
+                    'Brave': 'fa-brave',
+                    'Vivaldi': 'fa-v',
+                    'Chromium': 'fa-chrome',
+                    'Facebook': 'fa-facebook',
+                    'Instagram': 'fa-instagram',
+                    'LINE': 'fa-line',
+                    'WeChat': 'fa-weixin',
+                    'TikTok': 'fa-tiktok'
+                };
 
-            // Phát hiện trình duyệt cụ thể
-            if (ua.match(/edg/i)) {
-                browserInfo.name = "Microsoft Edge";
-            } else if (ua.match(/opr\//i) || ua.match(/opera/i)) {
-                browserInfo.name = "Opera";
-            } else if (ua.match(/chrome|chromium|crios/i)) {
-                if (ua.match(/edg/i)) {
-                    browserInfo.name = "Microsoft Edge";
-                } else {
-                    browserInfo.name = "Google Chrome";
+                for (const [browser, icon] of Object.entries(browserIcons)) {
+                    if (browserName.toLowerCase().includes(browser.toLowerCase())) {
+                        return icon;
+                    }
                 }
-            } else if (ua.match(/firefox|fxios/i)) {
-                browserInfo.name = "Mozilla Firefox";
-            } else if (ua.match(/safari/i)) {
-                browserInfo.name = "Safari";
+                return 'fa-globe';
             }
 
-            // Phát hiện ứng dụng đặc biệt
-            if (ua.match(/electron/i)) {
-                browserInfo.name += " (Electron App)";
-            } else if (ua.match(/mobile/i)) {
-                if (ua.match(/instagram/i)) {
-                    browserInfo.name = "Instagram In-App Browser";
-                } else if (ua.match(/fbav|fban/i)) {
-                    browserInfo.name = "Facebook In-App Browser";
-                } else if (ua.match(/line/i)) {
-                    browserInfo.name = "LINE In-App Browser";
+            function getEngineIcon(engineName) {
+                const engineIcons = {
+                    'Blink': 'fa-chrome',
+                    'WebKit': 'fa-safari',
+                    'Gecko': 'fa-firefox-browser',
+                    'Trident': 'fa-internet-explorer',
+                    'Presto': 'fa-opera'
+                };
+
+                for (const [engine, icon] of Object.entries(engineIcons)) {
+                    if (engineName.toLowerCase().includes(engine.toLowerCase())) {
+                        return icon;
+                    }
                 }
+                return 'fa-microchip';
             }
 
-            const getBrowserIcon = (browserName) => {
-                if (browserName.includes("Chrome")) return "fa-chrome";
-                if (browserName.includes("Firefox")) return "fa-firefox-browser";
-                if (browserName.includes("Edge")) return "fa-edge";
-                if (browserName.includes("Safari")) return "fa-safari";
-                if (browserName.includes("Opera")) return "fa-opera";
-                if (browserName.includes("Instagram")) return "fa-instagram";
-                if (browserName.includes("Facebook")) return "fa-facebook";
-                if (browserName.includes("LINE")) return "fa-line";
-                return "fa-globe";
-            };
+            function getPlatformIcon(platform) {
+                const platformIcons = {
+                    'Win': 'fa-windows',
+                    'Mac': 'fa-apple',
+                    'iPhone': 'fa-apple',
+                    'iPad': 'fa-apple',
+                    'Linux': 'fa-linux',
+                    'Android': 'fa-android'
+                };
 
-            const getEngineIcon = (engineName) => {
-                if (engineName.includes("Blink")) return "fa-chrome";
-                if (engineName.includes("WebKit")) return "fa-safari";
-                if (engineName.includes("Gecko")) return "fa-firefox-browser";
-                return "fa-microchip";
-            };
+                for (const [os, icon] of Object.entries(platformIcons)) {
+                    if (platform.includes(os)) {
+                        return icon;
+                    }
+                }
+                return 'fa-desktop';
+            }
 
-            const getPlatformIcon = (platform) => {
-                if (platform.includes("Win")) return "fa-windows";
-                if (platform.includes("Mac")) return "fa-apple";
-                if (platform.includes("Linux")) return "fa-linux";
-                if (platform.includes("Android")) return "fa-android";
-                if (platform.includes("iPhone") || platform.includes("iPad")) return "fa-apple";
-                return "fa-desktop";
-            };
-
-            const browserElement = document.getElementById('browser');
-            function updateBatteryInfo() {
+            function updateDisplay(info) {
+                const browserElement = document.getElementById('browser');
                 browserElement.innerHTML = `
                     <div style="display: grid; gap: 10px;">
                         <div class="section-title">Thông tin trình duyệt</div>
                         <div class="browser-info">
-                            <i class="fab ${getBrowserIcon(browserInfo.name)} icon"></i>
-                            <span>Trình duyệt: ${browserInfo.name}</span>
+                            <i class="fab ${getBrowserIcon(info.name)} icon"></i>
+                            <span>Trình duyệt: ${info.name} ${info.version}</span>
                         </div>
                         <div class="browser-info">
-                            <i class="fas ${getEngineIcon(browserInfo.engine)} icon"></i>
-                            <span>Engine: ${browserInfo.engine}</span>
+                            <i class="fas ${getEngineIcon(info.engine)} icon"></i>
+                            <span>Engine: ${info.engine}</span>
                         </div>
+                        ${info.isWebView ? `
+                        <div class="browser-info">
+                            <i class="fas fa-mobile-alt icon"></i>
+                            <span>WebView: ${info.webViewType} ${info.webViewDetails.length ? `(${info.webViewDetails.join(', ')})` : ''}</span>
+                        </div>
+                        ` : ''}
                         <div class="browser-info">
                             <i class="fas fa-language icon"></i>
-                            <span>Ngôn ngữ: ${browserInfo.language}</span>
+                            <span>Ngôn ngữ: ${info.language}</span>
                         </div>
                         <div class="browser-info">
                             <i class="fas fa-cookie icon"></i>
-                            <span>Cookie: ${browserInfo.cookieEnabled ? 'Được bật' : 'Bị tắt'}</span>
+                            <span>Cookie: ${info.cookieEnabled ? 'Được bật' : 'Bị tắt'}</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas fa-user-secret icon"></i>
+                            <span>Do Not Track: ${info.doNotTrack ? 'Bật' : 'Tắt'}</span>
                         </div>
 
                         <div class="section-title">Thông tin thiết bị</div>
                         <div class="browser-info">
-                            <i class="fab ${getPlatformIcon(browserInfo.platform)} icon"></i>
-                            <span>Nền tảng: ${browserInfo.platform}</span>
+                            <i class="fab ${getPlatformIcon(info.platform)} icon"></i>
+                            <span>Nền tảng: ${info.platform}</span>
                         </div>
                         <div class="browser-info">
                             <i class="fas fa-microchip icon"></i>
-                            <span>CPU Cores: ${browserInfo.cores}</span>
+                            <span>CPU Cores: ${info.cores}</span>
                         </div>
                         <div class="browser-info">
                             <i class="fas fa-memory icon"></i>
-                            <span>Bộ nhớ: ${browserInfo.memory}</span>
+                            <span>Bộ nhớ: ${info.memory}</span>
                         </div>
                         <div class="browser-info">
                             <i class="fas fa-desktop icon"></i>
-                            <span>Độ phân giải: ${browserInfo.screenResolution} (${browserInfo.colorDepth}-bit)</span>
+                            <span>Độ phân giải: ${info.screenResolution} (${info.colorDepth}-bit)</span>
                         </div>
                         <div class="browser-info">
                             <i class="fas fa-mobile-alt icon"></i>
-                            <span>Màn hình cảm ứng: ${browserInfo.touchScreen ? 'Có' : 'Không'}</span>
+                            <span>Màn hình cảm ứng: ${info.touchScreen ? 'Có' : 'Không'}</span>
                         </div>
 
                         <div class="section-title">Thông tin kết nối</div>
                         <div class="browser-info">
                             <i class="fas fa-wifi icon"></i>
-                            <span>Trạng thái: ${browserInfo.online ? 'Đang kết nối' : 'Không có kết nối'}</span>
+                            <span>Trạng thái: ${info.online ? 'Đang kết nối' : 'Không có kết nối'}</span>
                         </div>
-                        ${browserInfo.connection ? `
+                        ${info.connection ? `
                         <div class="browser-info">
                             <i class="fas fa-tachometer-alt icon"></i>
-                            <span>Loại kết nối: ${browserInfo.connection.type}</span>
+                            <span>Loại kết nối: ${info.connection.type}</span>
                         </div>
                         <div class="browser-info">
                             <i class="fas fa-download icon"></i>
-                            <span>Tốc độ: ${browserInfo.connection.downlink} Mbps</span>
+                            <span>Tốc độ: ${info.connection.downlink} Mbps</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas fa-clock icon"></i>
+                            <span>RTT: ${info.connection.rtt}ms</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas fa-save icon"></i>
+                            <span>Tiết kiệm dữ liệu: ${info.connection.saveData ? 'Bật' : 'Tắt'}</span>
                         </div>
                         ` : ''}
-                        ${browserInfo.battery ? `
+                        ${info.battery ? `
                         <div class="browser-info">
-                            <i class="fas ${browserInfo.battery.charging ? 'fa-plug' : 'fa-battery-half'} icon"></i>
-                            <span>Pin: ${browserInfo.battery.level}% ${browserInfo.battery.charging ? '(Đang sạc)' : ''}</span>
+                            <i class="fas ${info.battery.charging ? 'fa-plug' : 'fa-battery-half'} icon"></i>
+                            <span>Pin: ${info.battery.level}% ${info.battery.charging ? '(Đang sạc)' : ''}</span>
                         </div>
                         ` : ''}
 
-                        <div class="section-title">Thông tin khác</div>
-                        ${browserInfo.isWebView ? `
+                        <div class="section-title">Quyền truy cập</div>
+                        ${Object.entries(info.permissions).map(([permission, state]) => `
                         <div class="browser-info">
-                            <i class="fas fa-mobile-alt icon"></i>
-                            <span>Đang chạy trong WebView</span>
+                            <i class="fas ${getPermissionIcon(permission)} icon"></i>
+                            <span>${getPermissionName(permission)}: ${getPermissionState(state)}</span>
                         </div>
-                        ` : ''}
+                        `).join('')}
+
+                        <div class="section-title">Thông tin khác</div>
                         <div class="browser-info" style="font-size: 0.8em; color: #666;">
                             <i class="fas fa-info-circle icon"></i>
-                            <span>User Agent: ${ua}</span>
+                            <span>User Agent: ${navigator.userAgent}</span>
                         </div>
                     </div>
                 `;
             }
-            updateBatteryInfo();
+
+            function getPermissionIcon(permission) {
+                const icons = {
+                    notifications: 'fa-bell',
+                    geolocation: 'fa-map-marker-alt',
+                    camera: 'fa-camera',
+                    microphone: 'fa-microphone'
+                };
+                return icons[permission] || 'fa-question';
+            }
+
+            function getPermissionName(permission) {
+                const names = {
+                    notifications: 'Thông báo',
+                    geolocation: 'Vị trí',
+                    camera: 'Camera',
+                    microphone: 'Microphone'
+                };
+                return names[permission] || permission;
+            }
+
+            function getPermissionState(state) {
+                const states = {
+                    granted: 'Cho phép',
+                    denied: 'Từ chối',
+                    prompt: 'Chưa xác định',
+                    'không hỗ trợ': 'Không hỗ trợ'
+                };
+                return states[state] || state;
+            }
         }
 
         async function getIPInfo() {
