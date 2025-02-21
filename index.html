@@ -97,6 +97,20 @@
         .browser-info:hover {
             background: #f8f9fa;
         }
+        .retry-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        .retry-button:hover {
+            background: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -320,37 +334,26 @@
         async function getIPInfo() {
             const apis = [
                 {
-                    url: 'https://api.ipify.org?format=json',
+                    url: 'https://api.seeip.org/jsonip',
                     transform: async (data) => {
-                        const detailResponse = await fetch(`https://ipapi.co/${data.ip}/json/`);
-                        const detailData = await detailResponse.json();
-                        return {
-                            ip: data.ip,
-                            country: detailData.country_name,
-                            city: detailData.city,
-                            isp: detailData.org
-                        };
-                    }
-                },
-                {
-                    url: 'https://api64.ipify.org?format=json',
-                    transform: async (data) => {
-                        const detailResponse = await fetch(`https://ip-api.com/json/${data.ip}?fields=status,message,country,city,isp`);
+                        // Sử dụng IP để lấy thông tin chi tiết từ ipwhois.app
+                        const detailResponse = await fetch(`https://ipwho.is/${data.ip}`);
                         const detailData = await detailResponse.json();
                         return {
                             ip: data.ip,
                             country: detailData.country,
                             city: detailData.city,
-                            isp: detailData.isp
+                            isp: detailData.connection.isp
                         };
                     }
                 },
                 {
-                    url: 'https://api.db-ip.com/v2/free/self',
+                    // Backup API
+                    url: 'https://freeipapi.com/api/json',
                     transform: (data) => ({
                         ip: data.ipAddress,
                         country: data.countryName,
-                        city: data.city,
+                        city: data.cityName,
                         isp: data.ipAddress
                     })
                 }
@@ -368,7 +371,11 @@
             const setError = (message, elements) => {
                 elements.forEach(id => {
                     const element = document.getElementById(id);
-                    element.textContent = message;
+                    if (id === 'ip') {
+                        element.innerHTML = `${message} <button onclick="retryGetIPInfo()" class="retry-button">Thử lại</button>`;
+                    } else {
+                        element.textContent = message;
+                    }
                     element.classList.remove('loading');
                     element.classList.add('error');
                 });
@@ -382,7 +389,7 @@
                 try {
                     console.log('Đang thử với API:', api.url);
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000); // timeout 5 giây
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
                     const response = await fetch(api.url, {
                         signal: controller.signal,
@@ -419,20 +426,24 @@
                 }
             }
 
-            // Nếu tất cả API đều thất bại
             let errorMessage = 'Không thể lấy thông tin IP. ';
             if (!navigator.onLine) {
                 errorMessage = 'Vui lòng kiểm tra kết nối internet của bạn';
             } else if (lastError) {
                 if (lastError.name === 'AbortError') {
-                    errorMessage += 'Kết nối quá chậm, vui lòng thử lại.';
+                    errorMessage += 'Kết nối quá chậm.';
                 } else if (lastError.message.includes('CORS')) {
-                    errorMessage += 'Lỗi CORS - Vui lòng thử lại sau.';
+                    errorMessage += 'Lỗi truy cập API.';
                 } else {
-                    errorMessage += 'Các API không phản hồi, vui lòng thử lại sau.';
+                    errorMessage += 'Vui lòng thử lại sau.';
                 }
             }
             setError(errorMessage, elements);
+        }
+
+        // Thêm hàm retry
+        function retryGetIPInfo() {
+            getIPInfo();
         }
 
         getIPInfo();
