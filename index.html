@@ -68,6 +68,35 @@
             color: #dc3545;
             font-style: italic;
         }
+        .browser-info {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+        }
+        .browser-info .icon {
+            width: 20px;
+            margin-right: 10px;
+            text-align: center;
+        }
+        .browser-info span {
+            flex: 1;
+        }
+        .section-title {
+            font-weight: 600;
+            color: #007bff;
+            margin-top: 10px;
+            padding: 5px 0;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .browser-info {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .browser-info:hover {
+            background: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -104,9 +133,35 @@
                 name: "Không xác định",
                 engine: "Không xác định",
                 platform: navigator.platform,
-                isWebView: false
+                isWebView: false,
+                language: navigator.language || navigator.userLanguage,
+                cookieEnabled: navigator.cookieEnabled,
+                screenResolution: `${window.screen.width}x${window.screen.height}`,
+                colorDepth: window.screen.colorDepth,
+                devicePixelRatio: window.devicePixelRatio,
+                connection: navigator.connection ? {
+                    type: navigator.connection.effectiveType,
+                    downlink: navigator.connection.downlink,
+                    rtt: navigator.connection.rtt
+                } : null,
+                memory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "Không có thông tin",
+                cores: navigator.hardwareConcurrency || "Không có thông tin",
+                touchScreen: navigator.maxTouchPoints > 0,
+                battery: null,
+                online: navigator.onLine
             };
-            
+
+            // Kiểm tra thông tin pin
+            if (navigator.getBattery) {
+                navigator.getBattery().then(battery => {
+                    browserInfo.battery = {
+                        level: Math.round(battery.level * 100),
+                        charging: battery.charging
+                    };
+                    updateBatteryInfo();
+                });
+            }
+
             // Phát hiện WebView
             if (ua.includes("wv") || ua.includes("WebView")) {
                 browserInfo.isWebView = true;
@@ -151,47 +206,191 @@
                 }
             }
 
+            const getBrowserIcon = (browserName) => {
+                if (browserName.includes("Chrome")) return "fa-chrome";
+                if (browserName.includes("Firefox")) return "fa-firefox-browser";
+                if (browserName.includes("Edge")) return "fa-edge";
+                if (browserName.includes("Safari")) return "fa-safari";
+                if (browserName.includes("Opera")) return "fa-opera";
+                if (browserName.includes("Instagram")) return "fa-instagram";
+                if (browserName.includes("Facebook")) return "fa-facebook";
+                if (browserName.includes("LINE")) return "fa-line";
+                return "fa-globe";
+            };
+
+            const getEngineIcon = (engineName) => {
+                if (engineName.includes("Blink")) return "fa-chrome";
+                if (engineName.includes("WebKit")) return "fa-safari";
+                if (engineName.includes("Gecko")) return "fa-firefox-browser";
+                return "fa-microchip";
+            };
+
+            const getPlatformIcon = (platform) => {
+                if (platform.includes("Win")) return "fa-windows";
+                if (platform.includes("Mac")) return "fa-apple";
+                if (platform.includes("Linux")) return "fa-linux";
+                if (platform.includes("Android")) return "fa-android";
+                if (platform.includes("iPhone") || platform.includes("iPad")) return "fa-apple";
+                return "fa-desktop";
+            };
+
             const browserElement = document.getElementById('browser');
-            browserElement.innerHTML = `
-                <div>Trình duyệt: ${browserInfo.name}</div>
-                <div>Engine: ${browserInfo.engine}</div>
-                <div>Nền tảng: ${browserInfo.platform}</div>
-                ${browserInfo.isWebView ? '<div>Đang chạy trong WebView</div>' : ''}
-                <div style="font-size: 0.8em; color: #666; margin-top: 5px;">User Agent: ${ua}</div>
-            `;
+            function updateBatteryInfo() {
+                browserElement.innerHTML = `
+                    <div style="display: grid; gap: 10px;">
+                        <div class="section-title">Thông tin trình duyệt</div>
+                        <div class="browser-info">
+                            <i class="fab ${getBrowserIcon(browserInfo.name)} icon"></i>
+                            <span>Trình duyệt: ${browserInfo.name}</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas ${getEngineIcon(browserInfo.engine)} icon"></i>
+                            <span>Engine: ${browserInfo.engine}</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas fa-language icon"></i>
+                            <span>Ngôn ngữ: ${browserInfo.language}</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas fa-cookie icon"></i>
+                            <span>Cookie: ${browserInfo.cookieEnabled ? 'Được bật' : 'Bị tắt'}</span>
+                        </div>
+
+                        <div class="section-title">Thông tin thiết bị</div>
+                        <div class="browser-info">
+                            <i class="fab ${getPlatformIcon(browserInfo.platform)} icon"></i>
+                            <span>Nền tảng: ${browserInfo.platform}</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas fa-microchip icon"></i>
+                            <span>CPU Cores: ${browserInfo.cores}</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas fa-memory icon"></i>
+                            <span>Bộ nhớ: ${browserInfo.memory}</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas fa-desktop icon"></i>
+                            <span>Độ phân giải: ${browserInfo.screenResolution} (${browserInfo.colorDepth}-bit)</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas fa-mobile-alt icon"></i>
+                            <span>Màn hình cảm ứng: ${browserInfo.touchScreen ? 'Có' : 'Không'}</span>
+                        </div>
+
+                        <div class="section-title">Thông tin kết nối</div>
+                        <div class="browser-info">
+                            <i class="fas fa-wifi icon"></i>
+                            <span>Trạng thái: ${browserInfo.online ? 'Đang kết nối' : 'Không có kết nối'}</span>
+                        </div>
+                        ${browserInfo.connection ? `
+                        <div class="browser-info">
+                            <i class="fas fa-tachometer-alt icon"></i>
+                            <span>Loại kết nối: ${browserInfo.connection.type}</span>
+                        </div>
+                        <div class="browser-info">
+                            <i class="fas fa-download icon"></i>
+                            <span>Tốc độ: ${browserInfo.connection.downlink} Mbps</span>
+                        </div>
+                        ` : ''}
+                        ${browserInfo.battery ? `
+                        <div class="browser-info">
+                            <i class="fas ${browserInfo.battery.charging ? 'fa-plug' : 'fa-battery-half'} icon"></i>
+                            <span>Pin: ${browserInfo.battery.level}% ${browserInfo.battery.charging ? '(Đang sạc)' : ''}</span>
+                        </div>
+                        ` : ''}
+
+                        <div class="section-title">Thông tin khác</div>
+                        ${browserInfo.isWebView ? `
+                        <div class="browser-info">
+                            <i class="fas fa-mobile-alt icon"></i>
+                            <span>Đang chạy trong WebView</span>
+                        </div>
+                        ` : ''}
+                        <div class="browser-info" style="font-size: 0.8em; color: #666;">
+                            <i class="fas fa-info-circle icon"></i>
+                            <span>User Agent: ${ua}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            updateBatteryInfo();
         }
 
         async function getIPInfo() {
-            try {
-                const response = await fetch('https://ipapi.co/json/');
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.reason || 'Không thể lấy thông tin IP');
+            const apis = [
+                {
+                    url: 'https://ipapi.co/json/',
+                    transform: (data) => ({
+                        ip: data.ip,
+                        country: data.country_name,
+                        city: data.city,
+                        isp: data.org
+                    })
+                },
+                {
+                    url: 'https://api.ipify.org?format=json',
+                    transform: async (data) => {
+                        // Lấy IP từ ipify, sau đó dùng ip-api.com để lấy thông tin chi tiết
+                        const detailResponse = await fetch(`http://ip-api.com/json/${data.ip}`);
+                        const detailData = await detailResponse.json();
+                        return {
+                            ip: data.ip,
+                            country: detailData.country,
+                            city: detailData.city,
+                            isp: detailData.isp
+                        };
+                    }
                 }
+            ];
 
-                const elements = {
-                    'ip': data.ip || 'Không có thông tin',
-                    'country': data.country_name || 'Không có thông tin',
-                    'city': data.city || 'Không có thông tin',
-                    'isp': data.org || 'Không có thông tin'
-                };
-
-                for (const [id, value] of Object.entries(elements)) {
-                    const element = document.getElementById(id);
-                    element.textContent = value;
-                    element.classList.remove('loading');
-                }
-            } catch (error) {
-                console.error('Lỗi:', error);
-                const elements = ['ip', 'country', 'city', 'isp'];
+            const setError = (message, elements) => {
                 elements.forEach(id => {
                     const element = document.getElementById(id);
-                    element.textContent = 'Lỗi khi tải dữ liệu';
+                    element.textContent = message;
                     element.classList.remove('loading');
                     element.classList.add('error');
                 });
+            };
+
+            const elements = ['ip', 'country', 'city', 'isp'];
+            let lastError = null;
+
+            for (const api of apis) {
+                try {
+                    const response = await fetch(api.url);
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.reason || 'API trả về lỗi');
+                    }
+
+                    const transformedData = await api.transform(data);
+                    
+                    for (const [id, value] of Object.entries(transformedData)) {
+                        const element = document.getElementById(id);
+                        element.textContent = value || 'Không có thông tin';
+                        element.classList.remove('loading', 'error');
+                    }
+
+                    // Nếu thành công thì thoát vòng lặp
+                    return;
+                } catch (error) {
+                    console.error('Lỗi với API:', api.url, error);
+                    lastError = error;
+                    // Tiếp tục thử API tiếp theo
+                }
             }
+
+            // Nếu tất cả API đều thất bại
+            let errorMessage = 'Không thể lấy thông tin IP. ';
+            if (lastError) {
+                errorMessage += `Chi tiết lỗi: ${lastError.message}`;
+                if (!navigator.onLine) {
+                    errorMessage = 'Vui lòng kiểm tra kết nối internet của bạn';
+                }
+            }
+            setError(errorMessage, elements);
         }
 
         getIPInfo();
