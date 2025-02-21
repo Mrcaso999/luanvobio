@@ -1,26 +1,201 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Wolf X</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông tin truy cập</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1a1a1a;color:#fff;font-family:system-ui,sans-serif;padding:15px}
-        .container{text-align:center;width:100%;max-width:500px}
-        .title{font-size:clamp(2rem,5vw,3rem);margin:0 0 10px}
-        .description{font-size:clamp(1rem,3vw,1.2rem);margin:0 0 25px;color:#888}
-        .button-1{display:inline-block;padding:12px 30px;background:#333;color:#fff;text-decoration:none;border-radius:25px;width:90%;max-width:250px;margin:10px auto}
-        .button-2{display:inline-block;padding:12px 30px;background:#333;color:#fff;text-decoration:none;border-radius:25px;width:90%;max-width:250px;margin:10px auto}
-        .button-1:hover{background:#444}
-        .button-2:hover{background:#444}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            margin-top: 20px;
+        }
+        tr {
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        tr:hover {
+            background: #e9ecef;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border: none;
+        }
+        th {
+            color: #6c757d;
+            font-weight: 500;
+            width: 30%;
+        }
+        td {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .icon {
+            color: #007bff;
+            margin-right: 10px;
+            width: 20px;
+        }
+        h2 {
+            color: #343a40;
+            margin-bottom: 30px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .loading {
+            color: #6c757d;
+            font-style: italic;
+        }
+        .error {
+            color: #dc3545;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="title">Luân Võ</h1>
-        <p class="description">Make Money With Trick</p>
-            <a href="https://reurl.cc/nqXZQD" class="button-1">Link 1</a>
-            <a href="https://reurl.cc/nqXZQD" class="button-2">Link 2</a>
+        <h2><i class="fas fa-globe icon"></i>Thông tin truy cập</h2>
+        <table>
+            <tr>
+                <th><i class="fas fa-network-wired icon"></i>Địa chỉ IP</th>
+                <td id="ip" class="loading">Đang tải...</td>
+            </tr>
+            <tr>
+                <th><i class="fas fa-flag icon"></i>Quốc gia</th>
+                <td id="country" class="loading">Đang tải...</td>
+            </tr>
+            <tr>
+                <th><i class="fas fa-city icon"></i>Thành phố</th>
+                <td id="city" class="loading">Đang tải...</td>
+            </tr>
+            <tr>
+                <th><i class="fas fa-building icon"></i>Nhà mạng</th>
+                <td id="isp" class="loading">Đang tải...</td>
+            </tr>
+            <tr>
+                <th><i class="fas fa-browser icon"></i>Trình duyệt</th>
+                <td id="browser"></td>
+            </tr>
+        </table>
     </div>
+    
+    <script>
+        function getBrowserInfo() {
+            const ua = navigator.userAgent;
+            let browserInfo = {
+                name: "Không xác định",
+                engine: "Không xác định",
+                platform: navigator.platform,
+                isWebView: false
+            };
+            
+            // Phát hiện WebView
+            if (ua.includes("wv") || ua.includes("WebView")) {
+                browserInfo.isWebView = true;
+            }
+
+            // Phát hiện Engine
+            if (window.chrome) {
+                browserInfo.engine = "Blink (Chrome Engine)";
+            } else if ('WebKitAppearance' in document.documentElement.style) {
+                browserInfo.engine = "WebKit";
+            } else if ('MozAppearance' in document.documentElement.style) {
+                browserInfo.engine = "Gecko (Firefox Engine)";
+            }
+
+            // Phát hiện trình duyệt cụ thể
+            if (ua.match(/edg/i)) {
+                browserInfo.name = "Microsoft Edge";
+            } else if (ua.match(/opr\//i) || ua.match(/opera/i)) {
+                browserInfo.name = "Opera";
+            } else if (ua.match(/chrome|chromium|crios/i)) {
+                if (ua.match(/edg/i)) {
+                    browserInfo.name = "Microsoft Edge";
+                } else {
+                    browserInfo.name = "Google Chrome";
+                }
+            } else if (ua.match(/firefox|fxios/i)) {
+                browserInfo.name = "Mozilla Firefox";
+            } else if (ua.match(/safari/i)) {
+                browserInfo.name = "Safari";
+            }
+
+            // Phát hiện ứng dụng đặc biệt
+            if (ua.match(/electron/i)) {
+                browserInfo.name += " (Electron App)";
+            } else if (ua.match(/mobile/i)) {
+                if (ua.match(/instagram/i)) {
+                    browserInfo.name = "Instagram In-App Browser";
+                } else if (ua.match(/fbav|fban/i)) {
+                    browserInfo.name = "Facebook In-App Browser";
+                } else if (ua.match(/line/i)) {
+                    browserInfo.name = "LINE In-App Browser";
+                }
+            }
+
+            const browserElement = document.getElementById('browser');
+            browserElement.innerHTML = `
+                <div>Trình duyệt: ${browserInfo.name}</div>
+                <div>Engine: ${browserInfo.engine}</div>
+                <div>Nền tảng: ${browserInfo.platform}</div>
+                ${browserInfo.isWebView ? '<div>Đang chạy trong WebView</div>' : ''}
+                <div style="font-size: 0.8em; color: #666; margin-top: 5px;">User Agent: ${ua}</div>
+            `;
+        }
+
+        async function getIPInfo() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.reason || 'Không thể lấy thông tin IP');
+                }
+
+                const elements = {
+                    'ip': data.ip || 'Không có thông tin',
+                    'country': data.country_name || 'Không có thông tin',
+                    'city': data.city || 'Không có thông tin',
+                    'isp': data.org || 'Không có thông tin'
+                };
+
+                for (const [id, value] of Object.entries(elements)) {
+                    const element = document.getElementById(id);
+                    element.textContent = value;
+                    element.classList.remove('loading');
+                }
+            } catch (error) {
+                console.error('Lỗi:', error);
+                const elements = ['ip', 'country', 'city', 'isp'];
+                elements.forEach(id => {
+                    const element = document.getElementById(id);
+                    element.textContent = 'Lỗi khi tải dữ liệu';
+                    element.classList.remove('loading');
+                    element.classList.add('error');
+                });
+            }
+        }
+
+        getIPInfo();
+        getBrowserInfo();
+    </script>
 </body>
 </html>
